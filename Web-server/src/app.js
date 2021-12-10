@@ -2,6 +2,9 @@ const path = require("path");
 const express = require("express");
 const hbs = require("hbs");
 
+const geocode = require("./utils/geocode");
+const forecast = require("./utils/forecast");
+
 const app = express();
 
 // console.log(__dirname);
@@ -51,7 +54,7 @@ app.use(express.static(publicDirectoryPath));
 // Home page
 app.get("", (req, res) => {
   res.render("index", {
-    title: "Wooah! it's working",
+    title: "Weather",
     name: "Ashwani",
   });
 });
@@ -76,15 +79,47 @@ app.get("/help", (req, res) => {
 // Weather Page
 app.get("/weather", (req, res) => {
   //   res.send("Weather page");
-  res.send([
-    {
-      forecast: "It is raining",
-      location: "Greater Noida",
-    },
-    {
-      temperature: 64,
-    },
-  ]);
+  if (!req.query.address) {
+    return res.send({
+      error: "You must provide a search address",
+    });
+  }
+
+  geocode(
+    req.query.address,
+    (error, { latitude, longitude, location } = {}) => {
+      if (error) {
+        return res.send({ error });
+      }
+
+      forecast(latitude, longitude, (error, forecastdata) => {
+        if (error) {
+          return res.send({ error });
+        }
+
+        res.send({
+          forecast: forecastdata,
+          location,
+          address: req.query.address,
+        });
+      });
+    }
+  );
+});
+
+app.get("/products", (req, res) => {
+  // console.log(req.query);
+  if (!req.query.search) {
+    return res.send({
+      error: "You must provide a search term",
+    });
+  }
+
+  console.log(req.query.search);
+
+  res.send({
+    products: [],
+  });
 });
 
 // Help 404 page
